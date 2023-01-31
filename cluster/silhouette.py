@@ -1,26 +1,27 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 
-
-class Silhouette:
-    def __init__(self):
-        """
-        inputs:
-            none
-        """
+'''
+Silhouette score class for silhouette score algorithm. 
+Calculates the silhouette score for each data point in a cluster.
+Steps:
+1. Compute mean distance between each point and all other points in same cluster
+2. Compute mean distance between each point and all other points in next nearest cluster
+3. Compute silhouette score for each point
+'''
+class mySilhouette:
+    def __init__(self) -> None:
+        self.silhouette = None
 
     def score(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
-        """
-        calculates the silhouette score for each of the observations
-
-        inputs:
-            X: np.ndarray
-                A 2D matrix where the rows are observations and columns are features.
-
-            y: np.ndarray
-                a 1D array representing the cluster labels for each of the observations in `X`
-
-        outputs:
-            np.ndarray
-                a 1D array with the silhouette scores for each of the observations in `X`
-        """
+        '''
+        input: matrix of data points(2D), array of labels(1D)
+        output: array of silhouette scores(1D)
+        '''
+        # Compute mean distance between each point and all other points in same cluster
+        a = np.array([np.mean(cdist(X[y == i], X[y == i])) for i in np.unique(y)])
+        # Compute mean distance between each point and all other points in next nearest cluster
+        b = np.array([np.mean(cdist(X[y == i], X[y != i])) for i in np.unique(y)])
+        # Compute silhouette score for each point
+        self.silhouette = ((b - a) / np.maximum(a, b))
+        return self.silhouette

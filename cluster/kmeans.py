@@ -1,74 +1,103 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 
+"""
+myKMeans class for k-means clustering algorithm
+Steps:
+1. Initialize centroids by first shuffling the dataset and then randomly
+    selecting k data points for the centroids without replacement.
+2. Keep iterating until there is no change to the centroids. i.e assignment
+    of data points to clusters isnt changing.
+    a. Compute the sum of the squared distance between data points and all
+        centroids.
+    b. Assign each data point to the closest cluster (centroid).
+    c. Compute the centroids for the clusters by taking the average of the
+        all data points that belong to each cluster.
 
-class KMeans:
-    def __init__(self, k: int, tol: float = 1e-6, max_iter: int = 100):
-        """
-        In this method you should initialize whatever attributes will be required for the class.
+Parameters
+----------
+k : int
+    Number of clusters
+tol : float
+    Tolerance for stopping criteria
+max_iter : int
+    Maximum number of iterations for algorithm to converge
 
-        You can also do some basic error handling.
+Attributes
+----------
+centroids : array, shape = [k, n_features]
+    Centroids found at the last iteration of k-means algorithm
+labels : array, shape = [n_samples,]
+    Cluster labels for each point
+error : float
+    Sum of squared distances of samples to their closest cluster center.
 
-        What should happen if the user provides the wrong input or wrong type of input for the
-        argument k?
+Methods
+-------
+fit(X)
+    Compute k-means clustering.
+"""
 
-        inputs:
-            k: int
-                the number of centroids to use in cluster fitting
-            tol: float
-                the minimum error tolerance from previous error during optimization to quit the model fit
-            max_iter: int
-                the maximum number of iterations before quitting model fit
-        """
+class myKMeans:
 
-    def fit(self, mat: np.ndarray):
-        """
-        Fits the kmeans algorithm onto a provided 2D matrix.
-        As a bit of background, this method should not return anything.
-        The intent here is to have this method find the k cluster centers from the data
-        with the tolerance, then you will use .predict() to identify the
-        clusters that best match some data that is provided.
+    def __init__(self, k: int, tol: float = 1e-6, max_iter: int = 100, random_state=42):
+        '''
+        Initialize required parameters
+        '''
+        self.k = k
+        self.tol = tol
+        self.max_iter = max_iter
+        self.centroids = None
+        self.labels = None
+        self.error = None
 
-        In sklearn there is also a fit_predict() method that combines these
-        functions, but for now we will have you implement them both separately.
+    def fit(self, mat: np.ndarray) -> None:
+        '''
+        ERROR CHECKING:
+        '''
+        if self.k > mat.shape[0]:
+            raise ValueError("Number of clusters cannot be greater than number of data points")
+        if self.k < 1:
+            raise ValueError("Number of clusters must be greater than 0")
+        if self.tol < 0:
+            raise ValueError("Tolerance must be greater than 0")
+        if self.max_iter < 1:
+            raise ValueError("Maximum number of iterations must be greater than 0")
 
-        inputs:
-            mat: np.ndarray
-                A 2D matrix where the rows are observations and columns are features
-        """
+        '''
+        ALGORITHM:
+        input: matrix of data points(2D), rows are observations, columns are features
+        '''
+
+        # Initialize centroids
+        centroids = mat[np.random.choice(mat.shape[0], self.k, replace=False), :]
+        for i in range(self.max_iter):
+            # Compute distance between each point and centroid
+            distances = cdist(mat, centroids)
+            # Assign each point to closest centroid
+            labels = np.argmin(distances, axis=1)
+            # Compute new centroids
+            new_centroids = np.array([mat[labels == i].mean(axis=0) for i in range(self.k)])
+            # Check for convergence
+            if np.allclose(centroids, new_centroids, atol=self.tol):
+                break
+            centroids = new_centroids
+        self.__centroids = centroids
+        self.__labels = labels
+        self.__error = np.sum(np.min(cdist(mat, self.__centroids), axis=1))
 
     def predict(self, mat: np.ndarray) -> np.ndarray:
-        """
-        Predicts the cluster labels for a provided matrix of data points--
-            question: what sorts of data inputs here would prevent the code from running?
-            How would you catch these sorts of end-user related errors?
-            What if, for example, the matrix is of a different number of features than
-            the data that the clusters were fit on?
+        '''
+        predition function: returns the cluster labels for each data point
+        input: matrix of data points(2D)
+        output: array of labels(1D)
+        '''
+        return np.argmin(cdist(mat, self.__centroids), axis=1)
+        
 
-        inputs:
-            mat: np.ndarray
-                A 2D matrix where the rows are observations and columns are features
-
-        outputs:
-            np.ndarray
-                a 1D array with the cluster label for each of the observations in `mat`
-        """
-
-    def get_error(self) -> float:
-        """
-        Returns the final squared-mean error of the fit model. You can either do this by storing the
-        original dataset or recording it following the end of model fitting.
-
-        outputs:
-            float
-                the squared-mean error of the fit model
-        """
+    def __get_error(self) -> float:
+        return self.__error
 
     def get_centroids(self) -> np.ndarray:
-        """
-        Returns the centroid locations of the fit model.
+        return self.__centroids
 
-        outputs:
-            np.ndarray
-                a `k x m` 2D matrix representing the cluster centroids of the fit model
-        """
